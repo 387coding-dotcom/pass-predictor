@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pass Predictor</title>
+</head>
+<body>
+
+<h1>Pass Predictor</h1>
+
+<div class="layout">
+  <div class="panel">
+    <label>Marks: <span id="marksVal">70</span></label>
+    <input type="range" id="marksSlider" min="0" max="100" value="70"
+      oninput="document.getElementById('marksVal').textContent=this.value">
+    <label>Attendance: <span id="attendanceVal">70</span></label>
+    <input type="range" id="attendanceSlider" min="0" max="100" value="70"
+      oninput="document.getElementById('attendanceVal').textContent=this.value">
+    <button id="trainBtn">Train Network</button>
+    <p id="status">Untrained</p>
+    <h2 id="predPct">--%</h2>
+  </div>
+
+  <div class="panel">
+    <h3>Network</h3>
+    <canvas id="network" width="380" height="300"></canvas>
+  </div>
+
+  <div class="panel">
+    <h3>Loss</h3>
+    <canvas id="lossChart" width="380" height="300"></canvas>
+  </div>
+</div>
+
+<script src="person1-math/math-core.js"></script>
+<script src="person2-training/train.js"></script>
+<script src="person3-diagram/diagram.js"></script>
+<script src="person4-ui/ui.js"></script>
+
+</body>
+</html>
