@@ -8,3 +8,8 @@ let trainingData = [
   { study: 9, sleep: 9, passed: 0 },
   { study: 3, sleep: 3, passed: 0 }
 ];
+
+function calculateloss(guess,actual){
+    let error = guess - actual;
+    return error * error;
+}
