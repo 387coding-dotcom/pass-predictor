@@ -1,11 +1,383 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Document</title>
-    <script src="network.js"></script>
-    <script src="trainer.js"></script>
+<meta charset="utf-8">
+<title>Will this student pass? — a 4-neuron neural network</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #fff; color: #222; margin: 0; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 28px 20px 60px; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .subtitle { color: #666; margin: 0 0 22px; font-size: 14px; }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 28px;
+    padding: 16px; border: 1px solid #e3e6e8; border-radius: 10px;
+    background: #fafbfc; margin-bottom: 14px;
+  }
+  .group { display: flex; flex-direction: column; gap: 6px; }
+  .group-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #999; font-weight: 700; }
+  .row { display: flex; gap: 12px; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #555; font-weight: 600; }
+  input { font: inherit; font-size: 14px; padding: 6px 8px; width: 86px; border: 1px solid #ccc; border-radius: 6px; }
+  button { font: inherit; font-size: 14px; padding: 8px 18px; border-radius: 6px; cursor: pointer; border: 1px solid #2c7fb8; }
+  #trainBtn { background: #2c7fb8; color: #fff; }
+  #resetBtn { background: #fff; color: #2c7fb8; }
+  .btn-row { display: flex; gap: 12px; margin-top: 18px; }
+
+  #statusDisplay { font-family: Menlo, Consolas, monospace; font-size: 13px; color: #555; margin: 0 0 4px; }
+  #verdictDisplay { font-size: 17px; font-weight: 700; margin: 0 0 22px; min-height: 24px; }
+
+  .panels { display: flex; flex-wrap: wrap; gap: 20px; }
+  .panel { border: 1px solid #e3e6e8; border-radius: 10px; padding: 14px 16px; background: #fff; }
+  .panel h2 { font-size: 15px; margin: 0 0 10px; }
+  .panel p { font-size: 12px; color: #777; margin: 10px 0 0; line-height: 1.5; max-width: 430px; }
+</style>
 </head>
 <body>
-    
+<div class="wrap">
+  <h1>Will this student pass?</h1>
+  <p class="subtitle">2 inputs &rarr; 4 hidden neurons &rarr; 1 output — trained live by gradient descent</p>
+
+  <div class="controls">
+    <div class="group">
+      <span class="group-title">Student to test</span>
+      <div class="row">
+        <label>Study hours <input id="probeStudyInput" type="number" value="6" min="0" max="10"></label>
+        <label>Sleep hours <input id="probeSleepInput" type="number" value="6" min="0" max="10"></label>
+      </div>
+    </div>
+    <div class="group">
+      <span class="group-title">Training</span>
+      <div class="row">
+        <label>Epochs <input id="epochInput" type="number" value="2000" min="1"></label>
+        <label>Learning rate <input id="lrInput" type="number" value="0.1" step="0.05"></label>
+      </div>
+    </div>
+    <div class="group">
+      <span class="group-title">Run</span>
+      <div class="btn-row">
+        <button id="trainBtn">Train</button>
+        <button id="resetBtn">Reset weights</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusDisplay">Not trained yet — click Train</div>
+  <div id="verdictDisplay"></div>
+
+  <div class="panels">
+    <div class="panel">
+      <h2>The network</h2>
+      <canvas id="netCanvas"></canvas>
+      <p>Blue = positive weight, orange = negative; thickness = strength.
+         The numbers on the lines are the live weights; the numbers in the
+         circles are each neuron&rsquo;s output for the student above.</p>
+    </div>
+    <div class="panel">
+      <h2>What it learned</h2>
+      <canvas id="scatterCanvas"></canvas>
+      <p>Green = passed, red = failed. Each colored line is one hidden
+         neuron&rsquo;s straight line. The ring is the student you typed in.</p>
+    </div>
+  </div>
+</div>
+
+<!-- the math, in load order -->
+<script src="network.js"></script>
+<script src="trainer.js"></script>
+
+<!-- the UI: drawing, controls, animation -->
+<script>
+// ---------- crisp canvases (the blur fix) ----------
+function setupCanvas(c, cssW, cssH) {
+  let dpr = window.devicePixelRatio || 1;
+  c.width = Math.round(cssW * dpr);
+  c.height = Math.round(cssH * dpr);
+  c.style.width = cssW + "px";
+  c.style.height = cssH + "px";
+  let context = c.getContext("2d");
+  context.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return context;
+}
+
+// ---------- controls and training state ----------
+let epochInput = document.getElementById("epochInput");
+let lrInput = document.getElementById("lrInput");
+let trainBtn = document.getElementById("trainBtn");
+let resetBtn = document.getElementById("resetBtn");
+let statusDisplay = document.getElementById("statusDisplay");
+let verdictDisplay = document.getElementById("verdictDisplay");
+let probeStudyInput = document.getElementById("probeStudyInput");
+let probeSleepInput = document.getElementById("probeSleepInput");
+
+let training = false;
+let epochsLeft = 0;
+let epochsPerFrame = 1;
+let currentLR = 0.1;
+let frameCount = 0;
+
+function getProbe() {
+  let s = parseFloat(probeStudyInput.value);
+  let sl = parseFloat(probeSleepInput.value);
+  if (isNaN(s)) s = 6;
+  if (isNaN(sl)) sl = 6;
+  return {
+    study: Math.min(10, Math.max(0, s)),
+    sleep: Math.min(10, Math.max(0, sl))
+  };
+}
+
+function startTraining() {
+  if (training) return;
+
+  let total = parseInt(epochInput.value);
+  currentLR = parseFloat(lrInput.value);
+  if (isNaN(total) || total < 1) total = 100;
+  if (isNaN(currentLR) || currentLR <= 0) currentLR = 0.1;
+
+  epochsLeft = total;
+  epochsPerFrame = Math.max(1, Math.ceil(total / 300));  // ~5 seconds of animation
+  training = true;
+  trainBtn.textContent = "Training...";
+}
+
+function resetWeights() {
+  for (let j = 0; j < 4; j++) {
+    W1[j][0] = randomWeight();
+    W1[j][1] = randomWeight();
+    b1[j] = randomWeight();
+    W2[j] = randomWeight();
+  }
+  b2 = randomWeight();
+  statusDisplay.textContent = "Weights re-rolled (random) — click Train";
+}
+
+trainBtn.addEventListener("click", startTraining);
+resetBtn.addEventListener("click", resetWeights);
+
+// ---------- the network diagram ----------
+const NET_W = 450, NET_H = 360;
+const R = 22;
+const IN_X = 70, HID_X = 230, OUT_X = 400;
+const inputY = [125, 235];
+const hiddenY = [70, 145, 215, 290];
+const outputY = 180;
+
+let netCanvas = document.getElementById("netCanvas");
+let nctx = setupCanvas(netCanvas, NET_W, NET_H);
+
+function drawConnection(x1, y1, x2, y2, w, offset, labelT) {
+  let color = (w >= 0) ? "#2c7fb8" : "#d95f02";
+  let thickness = 1 + Math.min(Math.abs(w) / 2, 1) * 6;
+
+  nctx.strokeStyle = color;
+  nctx.lineWidth = thickness;
+  nctx.beginPath();
+  nctx.moveTo(x1, y1);
+  nctx.lineTo(x2, y2);
+  nctx.stroke();
+
+  // the weight's value, in a white box on the line
+  nctx.font = "bold 12px Menlo, Consolas, monospace";
+  let label = w.toFixed(2);
+  let tw = nctx.measureText(label).width;
+  let mx = x1 + (x2 - x1) * labelT;
+  let my = y1 + (y2 - y1) * labelT;
+  nctx.fillStyle = "#ffffff";
+  nctx.fillRect(mx - tw / 2 - 3, my - 9, tw + 6, 16);
+  nctx.fillStyle = color;
+  nctx.fillText(label, mx - tw / 2, my + 4);
+
+  // moving pulse — ONLY while training
+  if (training) {
+    let phase = (frameCount * 0.012 + offset * 0.17) % 1;
+    let px = x1 + (x2 - x1) * phase;
+    let py = y1 + (y2 - y1) * phase;
+    nctx.fillStyle = color;
+    nctx.beginPath();
+    nctx.arc(px, py, 4, 0, Math.PI * 2);
+    nctx.fill();
+  }
+}
+
+function drawNode(x, y, fill, stroke, value) {
+  nctx.fillStyle = fill;
+  nctx.strokeStyle = stroke;
+  nctx.lineWidth = 2.5;
+  nctx.beginPath();
+  nctx.arc(x, y, R, 0, Math.PI * 2);
+  nctx.fill();
+  nctx.stroke();
+
+  nctx.fillStyle = "#222";
+  nctx.font = "bold 13px Menlo, Consolas, monospace";
+  let t = value.toFixed(2);
+  nctx.fillText(t, x - nctx.measureText(t).width / 2, y + 4);
+}
+
+function drawNetwork() {
+  nctx.clearRect(0, 0, NET_W, NET_H);
+
+  let probe = getProbe();
+  let result = forward(probe.study / 10, probe.sleep / 10);
+  let hidden = result.hiddenOutputs;
+
+  // input → hidden connections carry W1
+  for (let i = 0; i < 2; i++) {
+    for (let j = 0; j < 4; j++) {
+      let labelT = (i === 0) ? 0.36 : 0.64;
+      drawConnection(IN_X, inputY[i], HID_X, hiddenY[j], W1[j][i], i * 4 + j, labelT);
+    }
+  }
+  // hidden → output connections carry W2
+  for (let j = 0; j < 4; j++) {
+    drawConnection(HID_X, hiddenY[j], OUT_X, outputY, W2[j], 8 + j, 0.5);
+  }
+
+  // the circles
+  drawNode(IN_X, inputY[0], "#e8daef", "#8e44ad", probe.study / 10);
+  drawNode(IN_X, inputY[1], "#e8daef", "#8e44ad", probe.sleep / 10);
+  for (let j = 0; j < 4; j++) {
+    drawNode(HID_X, hiddenY[j], "#fcf3cf", "#d4ac0d", hidden[j]);
+  }
+  drawNode(OUT_X, outputY, "#d5f5e3", "#229954", result.finalOutput);
+
+  // captions
+  nctx.fillStyle = "#555";
+  nctx.font = "12px system-ui, sans-serif";
+  nctx.textAlign = "center";
+  nctx.fillText("study", IN_X, inputY[0] + 40);
+  nctx.fillText("sleep", IN_X, inputY[1] + 40);
+  nctx.fillText("hidden layer", HID_X, 26);
+  nctx.fillText("guess = P(pass)", OUT_X, outputY + 40);
+  nctx.textAlign = "left";
+
+  // the verdict line
+  let pass = result.finalOutput >= 0.5;
+  let txt = "Prediction for " + probe.study + "h study / " + probe.sleep +
+            "h sleep:  " + result.finalOutput.toFixed(3) + "  \u2192  " +
+            (pass ? "PASS" : "FAIL");
+  if (verdictDisplay.textContent !== txt) verdictDisplay.textContent = txt;
+  verdictDisplay.style.color = pass ? "#1e8449" : "#c0392b";
+}
+
+// ---------- the scatter plot (the four lines / the box) ----------
+const SC_W = 380, SC_H = 360;
+const PAD = 36;
+
+let scatterCanvas = document.getElementById("scatterCanvas");
+let sctx = setupCanvas(scatterCanvas, SC_W, SC_H);
+
+function toPixels(nx, ny) {
+  return {
+    x: PAD + nx * (SC_W - 2 * PAD),
+    y: (SC_H - PAD) - ny * (SC_H - 2 * PAD)
+  };
+}
+
+function drawHiddenLine(j, color) {
+  let a = W1[j][0], b = W1[j][1], c = b1[j];
+  let p1, p2;
+
+  if (Math.abs(b) >= Math.abs(a)) {
+    let xA = -0.2, xB = 1.2;
+    p1 = toPixels(xA, -(a * xA + c) / b);
+    p2 = toPixels(xB, -(a * xB + c) / b);
+  } else {
+    let yA = -0.2, yB = 1.2;
+    p1 = toPixels(-(b * yA + c) / a, yA);
+    p2 = toPixels(-(b * yB + c) / a, yB);
+  }
+
+  sctx.strokeStyle = color;
+  sctx.lineWidth = 2;
+  sctx.beginPath();
+  sctx.moveTo(p1.x, p1.y);
+  sctx.lineTo(p2.x, p2.y);
+  sctx.stroke();
+}
+
+function drawScatter() {
+  sctx.clearRect(0, 0, SC_W, SC_H);
+  sctx.fillStyle = "#fdfdfd";
+  sctx.fillRect(0, 0, SC_W, SC_H);
+
+  // light grid every 2 hours
+  sctx.strokeStyle = "#ededed";
+  sctx.lineWidth = 1;
+  for (let g = 0; g <= 10; g += 2) {
+    let gx = toPixels(g / 10, 0).x;
+    sctx.beginPath();
+    sctx.moveTo(gx, PAD - 12);
+    sctx.lineTo(gx, SC_H - PAD + 12);
+    sctx.stroke();
+
+    let gy = toPixels(0, g / 10).y;
+    sctx.beginPath();
+    sctx.moveTo(PAD - 12, gy);
+    sctx.lineTo(SC_W - PAD + 12, gy);
+    sctx.stroke();
+  }
+
+  // the students
+  for (let i = 0; i < trainingData.length; i++) {
+    let s = trainingData[i];
+    let p = toPixels(s.study / 10, s.sleep / 10);
+    sctx.fillStyle = (s.passed === 1) ? "#27ae60" : "#c0392b";
+    sctx.beginPath();
+    sctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+    sctx.fill();
+  }
+
+  // the four hidden neurons' lines
+  let colors = ["#1f77b4", "#9467bd", "#ff7f0e", "#17becf"];
+  for (let j = 0; j < 4; j++) {
+    drawHiddenLine(j, colors[j]);
+  }
+
+  // the student you typed in — a ring
+  let probe = getProbe();
+  let pp = toPixels(probe.study / 10, probe.sleep / 10);
+  sctx.strokeStyle = "#111111";
+  sctx.lineWidth = 2;
+  sctx.beginPath();
+  sctx.arc(pp.x, pp.y, 10, 0, Math.PI * 2);
+  sctx.stroke();
+
+  // axis labels
+  sctx.fillStyle = "#555";
+  sctx.font = "12px system-ui, sans-serif";
+  sctx.fillText("study (hours) \u2192", SC_W - PAD - 110, SC_H - 12);
+  sctx.fillText("sleep (hours) \u2191", 10, 18);
+  sctx.fillText("0", PAD - 4, SC_H - 20);
+  sctx.fillText("10", SC_W - PAD - 10, SC_H - 20);
+}
+
+// ---------- the main loop ----------
+function frame() {
+  frameCount++;
+
+  if (training) {
+    let loss = 0;
+    for (let k = 0; k < epochsPerFrame && epochsLeft > 0; k++) {
+      loss = trainEpoch(currentLR);
+      epochsLeft--;
+    }
+    statusDisplay.textContent =
+      "Loss: " + loss.toFixed(4) + "   \u00b7   epochs left: " + epochsLeft;
+
+    if (epochsLeft <= 0) {
+      training = false;
+      trainBtn.textContent = "Train";
+      statusDisplay.textContent = "Done — final loss " + loss.toFixed(4);
+    }
+  }
+
+  drawNetwork();
+  drawScatter();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
 </body>
 </html>
