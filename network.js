@@ -1,17 +1,20 @@
 function sigmoid(z){
     return 1/(1+ Math.exp(-z));
 }
+function randomWeight() {
+  return Math.random() * 0.8 - 0.4;
+}
 
 let W1 = [
-  [0.5, -0.3],
-  [-0.4, 0.6],
-  [0.2, 0.2],
-  [-0.6, -0.5]
+  [randomWeight(), randomWeight()],
+  [randomWeight(), randomWeight()],
+  [randomWeight(), randomWeight()],
+  [randomWeight(), randomWeight()]
 ];
-let b1 = [0.1, -0.1, 0.05, 0.2];
+let b1 = [randomWeight(), randomWeight(), randomWeight(), randomWeight()];
 
-let W2 = [0.5, -0.4, 0.3, 0.6];
-let b2 = 0.1;
+let W2 = [randomWeight(), randomWeight(), randomWeight(), randomWeight()];
+let b2 = randomWeight();
 
 function forward(study, sleep) {
   let hiddenOutputs = [];
