@@ -23,3 +23,25 @@ function calculateGradients(study, sleep, guess, actual) {
 
   return { dw1, dw2, db };
 }
+
+function trainOnOneStudent(student, learningRate) {
+  let guess = forward(student.study / 10, student.sleep / 10);
+  let grads = calculateGradients(student.study / 10, student.sleep / 10, guess, student.passed);
+
+  w1 = w1 - learningRate * grads.dw1;
+  w2 = w2 - learningRate * grads.dw2;
+  b  = b  - learningRate * grads.db;
+}
+function trainEpoch(learningRate) {
+  let totalLoss = 0;
+
+  for (let i = 0; i < trainingData.length; i++) {
+    let student = trainingData[i];
+    let guess = forward(student.study, student.sleep);
+    totalLoss += calculateloss(guess, student.passed);
+    trainOnOneStudent(student, learningRate);
+  }
+
+  let averageLoss = totalLoss / trainingData.length;
+  return averageLoss;
+}
