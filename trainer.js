@@ -13,3 +13,13 @@ function calculateloss(guess,actual){
     let error = guess - actual;
     return error * error;
 }
+function calculateGradients(study, sleep, guess, actual) {
+  let error = guess - actual;
+  let dOutput = error * guess * (1 - guess);
+
+  let dw1 = dOutput * study;
+  let dw2 = dOutput * sleep;
+  let db = dOutput;
+
+  return { dw1, dw2, db };
+}
