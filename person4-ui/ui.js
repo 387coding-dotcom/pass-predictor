@@ -27,6 +27,13 @@ function updatePrediction() {
   const prediction = forward(normalizedInputs);
 
   predPctEl.textContent = Math.round(prediction * 100) + '%';
+  if (prediction > 0.7) {
+  predPctEl.style.color = '#2e7d32';
+} else if (prediction > 0.4) {
+  predPctEl.style.color = '#f9a825';
+} else {
+  predPctEl.style.color = '#c62828';
+}
 
   drawNetwork(networkCanvas, normalizedInputs, prediction);
 }
