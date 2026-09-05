@@ -4,33 +4,48 @@
 <meta charset="utf-8">
 <title>Will this student pass? — a 4-neuron neural network</title>
 <style>
-  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #fff; color: #222; margin: 0; }
-  .wrap { max-width: 940px; margin: 0 auto; padding: 28px 20px 60px; }
-  h1 { font-size: 26px; margin: 0 0 6px; }
-  .subtitle { color: #666; margin: 0 0 22px; font-size: 14px; }
+ @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
-  .controls {
-    display: flex; flex-wrap: wrap; gap: 28px;
-    padding: 16px; border: 1px solid #e3e6e8; border-radius: 10px;
-    background: #fafbfc; margin-bottom: 14px;
-  }
-  .group { display: flex; flex-direction: column; gap: 6px; }
-  .group-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #999; font-weight: 700; }
-  .row { display: flex; gap: 12px; }
-  label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #555; font-weight: 600; }
-  input { font: inherit; font-size: 14px; padding: 6px 8px; width: 86px; border: 1px solid #ccc; border-radius: 6px; }
-  button { font: inherit; font-size: 14px; padding: 8px 18px; border-radius: 6px; cursor: pointer; border: 1px solid #2c7fb8; }
-  #trainBtn { background: #2c7fb8; color: #fff; }
-  #resetBtn { background: #fff; color: #2c7fb8; }
-  .btn-row { display: flex; gap: 12px; margin-top: 18px; }
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #222;
+  margin: 0;
+}
+.wrap { max-width: 940px; margin: 0 auto; padding: 28px 20px 60px; }
+h1 { font-size: 26px; margin: 0 0 6px; color: #fff; }
+.subtitle { color: #f0e9ff; margin: 0 0 22px; font-size: 14px; }
 
-  #statusDisplay { font-family: Menlo, Consolas, monospace; font-size: 13px; color: #555; margin: 0 0 4px; }
-  #verdictDisplay { font-size: 17px; font-weight: 700; margin: 0 0 22px; min-height: 24px; }
+.controls {
+  display: flex; flex-wrap: wrap; gap: 28px;
+  padding: 16px; border: 1px solid rgba(255,255,255,0.3); border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95); margin-bottom: 14px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+}
+.group { display: flex; flex-direction: column; gap: 6px; }
+.group-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #999; font-weight: 700; }
+.row { display: flex; gap: 12px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #555; font-weight: 600; }
+input { font: inherit; font-size: 14px; padding: 6px 8px; width: 86px; border: 1px solid #ccc; border-radius: 6px; }
+button { font: inherit; font-size: 14px; padding: 8px 18px; border-radius: 6px; cursor: pointer; border: 1px solid #0f4c81; transition: transform 0.15s ease, background 0.2s ease; }
+#trainBtn { background: #0f4c81; color: #fff; }
+#trainBtn:hover { background: #0a3a63; transform: scale(1.05); }
+#resetBtn { background: #fff; color: #0f4c81; }
+#resetBtn:hover { background: #f0f4f8; transform: scale(1.05); }
+.btn-row { display: flex; gap: 12px; margin-top: 18px; }
 
-  .panels { display: flex; flex-wrap: wrap; gap: 20px; }
-  .panel { border: 1px solid #e3e6e8; border-radius: 10px; padding: 14px 16px; background: #fff; }
-  .panel h2 { font-size: 15px; margin: 0 0 10px; }
-  .panel p { font-size: 12px; color: #777; margin: 10px 0 0; line-height: 1.5; max-width: 430px; }
+#statusDisplay { font-family: Menlo, Consolas, monospace; font-size: 13px; color: #333; margin: 0 0 4px; background: rgba(255,255,255,0.9); display: inline-block; padding: 6px 12px; border-radius: 6px; }
+#verdictDisplay { font-size: 17px; font-weight: 700; margin: 8px 0 22px; min-height: 24px; color: #fff; }
+
+.panels { display: flex; flex-wrap: wrap; gap: 20px; }
+.panel {
+  border: 1px solid rgba(255,255,255,0.3); border-radius: 12px; padding: 14px 16px;
+  background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.panel:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+.panel h2 { font-size: 15px; margin: 0 0 10px; color: #16213e; }
+.panel p { font-size: 12px; color: #777; margin: 10px 0 0; line-height: 1.5; max-width: 430px; }
 </style>
 </head>
 <body>
@@ -79,6 +94,12 @@
       <p>Green = passed, red = failed. Each colored line is one hidden
          neuron&rsquo;s straight line. The ring is the student you typed in.</p>
     </div>
+        <div class="panel">
+      <h2>Loss over time</h2>
+      <canvas id="lossCanvas"></canvas>
+      <p>Each point is the average error across all students at that
+         epoch. A downward-trending line means the network is learning.</p>
+    </div>
   </div>
 </div>
 
@@ -115,6 +136,7 @@ let epochsLeft = 0;
 let epochsPerFrame = 1;
 let currentLR = 0.1;
 let frameCount = 0;
+let lossHistory = [];
 
 function getProbe() {
   let s = parseFloat(probeStudyInput.value);
@@ -139,6 +161,7 @@ function startTraining() {
   epochsPerFrame = Math.max(1, Math.ceil(total / 300));  // ~5 seconds of animation
   training = true;
   trainBtn.textContent = "Training...";
+  lossHistory = [];
 }
 
 function resetWeights() {
@@ -267,6 +290,53 @@ const PAD = 36;
 
 let scatterCanvas = document.getElementById("scatterCanvas");
 let sctx = setupCanvas(scatterCanvas, SC_W, SC_H);
+const LOSS_W = 380, LOSS_H = 360;
+let lossCanvas = document.getElementById("lossCanvas");
+let lctx = setupCanvas(lossCanvas, LOSS_W, LOSS_H);
+
+function drawLossChart() {
+  lctx.clearRect(0, 0, LOSS_W, LOSS_H);
+  lctx.fillStyle = "#fdfdfd";
+  lctx.fillRect(0, 0, LOSS_W, LOSS_H);
+
+  if (lossHistory.length < 2) {
+    lctx.fillStyle = "#999";
+    lctx.font = "13px system-ui, sans-serif";
+    lctx.fillText("Train the network to see loss here", 30, LOSS_H / 2);
+    return;
+  }
+
+  const pad = 36;
+  const maxLoss = Math.max(...lossHistory);
+
+  lctx.strokeStyle = "#ededed";
+  lctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    let gy = pad + (i / 4) * (LOSS_H - 2 * pad);
+    lctx.beginPath();
+    lctx.moveTo(pad, gy);
+    lctx.lineTo(LOSS_W - pad, gy);
+    lctx.stroke();
+  }
+
+  lctx.strokeStyle = "#2c7fb8";
+  lctx.lineWidth = 2;
+  lctx.beginPath();
+  lossHistory.forEach((loss, i) => {
+    let x = pad + (i / (lossHistory.length - 1)) * (LOSS_W - 2 * pad);
+    let y = (LOSS_H - pad) - (loss / maxLoss) * (LOSS_H - 2 * pad);
+    if (i === 0) lctx.moveTo(x, y);
+    else lctx.lineTo(x, y);
+  });
+  lctx.stroke();
+
+  lctx.fillStyle = "#555";
+  lctx.font = "12px system-ui, sans-serif";
+  lctx.fillText("epoch \u2192", LOSS_W - pad - 50, LOSS_H - 10);
+  lctx.fillText("loss \u2191", 8, 18);
+  lctx.fillText(maxLoss.toFixed(3), 4, pad + 4);
+  lctx.fillText("0", 20, LOSS_H - pad + 4);
+}
 
 function toPixels(nx, ny) {
   return {
@@ -361,6 +431,7 @@ function frame() {
     let loss = 0;
     for (let k = 0; k < epochsPerFrame && epochsLeft > 0; k++) {
       loss = trainEpoch(currentLR);
+      lossHistory.push(loss);
       epochsLeft--;
     }
     statusDisplay.textContent =
@@ -375,6 +446,7 @@ function frame() {
 
   drawNetwork();
   drawScatter();
+  drawLossChart();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
