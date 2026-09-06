@@ -1,29 +1,17 @@
 // PERSON 2: Training & Optimization
 //
-// Depends on: forward(marksNorm, attendanceNorm, weights, bias) and
-// normalize(marks, attendance) from person1-math/math-core.js
+// Depends on normalize() and forward() from person1-math/math-core.js,
+// loaded first as plain browser globals (no bundler/require in this
+// project — see index.html script order).
 //
-// This file is written against the INTERFACE CONTRACT specified for
-// person1's file, not against any specific committed version of it.
-// person1-math/math-core.js is expected to export:
-//   - normalize(marks, attendance) -> [marksNorm, attendanceNorm]
-//   - forward(marksNorm, attendanceNorm, weights, bias) -> probability (0-1)
-// If the real file's exports/signatures differ, update the require() and
-// the two calls to normalize()/forward() below — the rest of the logic
-// (loss averaging, gradient descent) does not need to change.
-//
-// Dataset row shape assumed: { marks, attendance, passed }
-//   where marks/attendance are raw 0-100 values and passed is 0 or 1.
-// weights is [w_marks, w_attendance], bias is a plain number.
-
-const { normalize, forward } = require('../person1-math/math-core.js');
+// weights = [w_marks, w_attendance], bias = single number.
 
 function predict(row, weights, bias) {
     const [marksNorm, attendanceNorm] = normalize(row.marks, row.attendance);
     return forward(marksNorm, attendanceNorm, weights, bias);
 }
 
-// 1. calculateLoss — average squared error across the whole dataset
+// average squared error across the whole dataset
 function calculateLoss(dataset, weights, bias) {
     let totalError = 0;
 
@@ -36,7 +24,7 @@ function calculateLoss(dataset, weights, bias) {
     return totalError / dataset.length;
 }
 
-// 2. train — runs gradient descent, returns { weights, bias, lossHistory }
+// runs gradient descent, returns { weights, bias, lossHistory }
 function train(dataset, epochs, learningRate) {
     let weights = [0, 0]; // [w_marks, w_attendance], start at zero
     let bias = 0;
@@ -73,5 +61,3 @@ function train(dataset, epochs, learningRate) {
 
     return { weights, bias, lossHistory };
 }
-
-module.exports = { calculateLoss, train };
