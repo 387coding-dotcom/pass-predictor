@@ -29,18 +29,18 @@ const lossCanvas = document.getElementById('lossChart');
 const networkCtx = networkCanvas.getContext('2d');
 
 // Model state — starts untrained at zero, gets replaced by train()'s result
-let weights = [0, 0];
+let weights = [0, 0, 0];
 let bias = 0;
 
 function updatePrediction() {
   const study = Number(studySlider.value);
   const sleep = Number(sleepSlider.value);
 
-  // normalize() takes two separate numbers and returns [studyNorm, sleepNorm]
-  const [studyNorm, sleepNorm] = normalize(study, sleep);
+  // normalize() takes two separate numbers and returns [studyNorm, sleepNorm, diffNorm]
+  const [studyNorm, sleepNorm, diffNorm] = normalize(study, sleep);
 
-  // forward() needs studyNorm, sleepNorm, weights, bias — all four
-  const prediction = forward(studyNorm, sleepNorm, weights, bias);
+  // forward() needs studyNorm, sleepNorm, diffNorm, weights, bias — all five
+  const prediction = forward(studyNorm, sleepNorm, diffNorm, weights, bias);
 
   predPctEl.textContent = Math.round(prediction * 100) + '%';
   if (prediction > 0.7) {
