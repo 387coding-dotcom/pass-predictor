@@ -15,11 +15,11 @@
 // loaded first as plain browser globals (no bundler/require in this
 // project — see index.html script order).
 //
-// weights = [w_marks, w_attendance], bias = single number.
+// weights = [w_study, w_sleep], bias = single number.
 
 function predict(row, weights, bias) {
-    const [marksNorm, attendanceNorm] = normalize(row.marks, row.attendance);
-    return forward(marksNorm, attendanceNorm, weights, bias);
+    const [studyNorm, sleepNorm] = normalize(row.study, row.sleep);
+    return forward(studyNorm, sleepNorm, weights, bias);
 }
 
 // average squared error across the whole dataset
@@ -37,33 +37,33 @@ function calculateLoss(dataset, weights, bias) {
 
 // runs gradient descent, returns { weights, bias, lossHistory }
 function train(dataset, epochs, learningRate) {
-    let weights = [0, 0]; // [w_marks, w_attendance], start at zero
+    let weights = [0, 0]; // [w_study, w_sleep], start at zero
     let bias = 0;
     const lossHistory = [];
 
     for (let epoch = 0; epoch < epochs; epoch++) {
-        let gradWMarks = 0;
-        let gradWAttendance = 0;
+        let gradWStudy = 0;
+        let gradWSleep = 0;
         let gradBias = 0;
 
         for (const row of dataset) {
-            const [marksNorm, attendanceNorm] = normalize(row.marks, row.attendance);
-            const prediction = forward(marksNorm, attendanceNorm, weights, bias);
+            const [studyNorm, sleepNorm] = normalize(row.study, row.sleep);
+            const prediction = forward(studyNorm, sleepNorm, weights, bias);
             const error = prediction - row.passed;
 
             // derivative of sigmoid: output * (1 - output)
             const sigmoidDerivative = prediction * (1 - prediction);
             const delta = error * sigmoidDerivative;
 
-            gradWMarks += delta * marksNorm;
-            gradWAttendance += delta * attendanceNorm;
+            gradWStudy += delta * studyNorm;
+            gradWSleep += delta * sleepNorm;
             gradBias += delta;
         }
 
         const n = dataset.length;
         weights = [
-            weights[0] - learningRate * (gradWMarks / n),
-            weights[1] - learningRate * (gradWAttendance / n),
+            weights[0] - learningRate * (gradWStudy / n),
+            weights[1] - learningRate * (gradWSleep / n),
         ];
         bias = bias - learningRate * (gradBias / n);
 

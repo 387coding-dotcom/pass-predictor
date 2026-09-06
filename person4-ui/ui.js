@@ -1,9 +1,9 @@
 // PERSON 4: UI, Layout & Integration
 //
 // What this person had to do:
-// 1. Build the HTML/CSS layout — sliders for marks and attendance,
-//    a "Train Network" button, a canvas for the network diagram, and
-//    a canvas for the loss chart, all laid out side by side.
+// 1. Build the HTML/CSS layout — sliders for study hours and sleep
+//    hours, a "Train Network" button, a canvas for the network
+//    diagram, and a canvas for the loss chart, all laid out side by side.
 // 2. Wire up the sliders — on every slider move, read the values,
 //    run them through normalize() + forward(), and update the live
 //    prediction percentage on screen.
@@ -18,8 +18,9 @@
 //             train() from person2-training/train.js
 //             drawNetwork() from person3-diagram/diagram.js
 
-const marksSlider = document.getElementById('marksSlider');
-const attendanceSlider = document.getElementById('attendanceSlider');
+// Grab references to HTML elements
+const studySlider = document.getElementById('studySlider');
+const sleepSlider = document.getElementById('sleepSlider');
 const trainBtn = document.getElementById('trainBtn');
 const statusEl = document.getElementById('status');
 const predPctEl = document.getElementById('predPct');
@@ -32,14 +33,14 @@ let weights = [0, 0];
 let bias = 0;
 
 function updatePrediction() {
-  const marks = Number(marksSlider.value);
-  const attendance = Number(attendanceSlider.value);
+  const study = Number(studySlider.value);
+  const sleep = Number(sleepSlider.value);
 
-  // normalize() takes two separate numbers and returns [marksNorm, attendanceNorm]
-  const [marksNorm, attendanceNorm] = normalize(marks, attendance);
+  // normalize() takes two separate numbers and returns [studyNorm, sleepNorm]
+  const [studyNorm, sleepNorm] = normalize(study, sleep);
 
-  // forward() needs marksNorm, attendanceNorm, weights, bias — all four
-  const prediction = forward(marksNorm, attendanceNorm, weights, bias);
+  // forward() needs studyNorm, sleepNorm, weights, bias — all four
+  const prediction = forward(studyNorm, sleepNorm, weights, bias);
 
   predPctEl.textContent = Math.round(prediction * 100) + '%';
   if (prediction > 0.7) {
@@ -50,28 +51,67 @@ function updatePrediction() {
     predPctEl.style.color = '#c62828';
   }
 
-  // drawNetwork() needs a 2D context, weights, bias, and raw [marks, attendance]
-  drawNetwork(networkCtx, weights, bias, [marks, attendance]);
+  // drawNetwork() needs a 2D context, weights, bias, and raw [study, sleep]
+  drawNetwork(networkCtx, weights, bias, [study, sleep]);
 }
 
-marksSlider.addEventListener('input', updatePrediction);
-attendanceSlider.addEventListener('input', updatePrediction);
+studySlider.addEventListener('input', updatePrediction);
+sleepSlider.addEventListener('input', updatePrediction);
 
 trainBtn.addEventListener('click', function () {
   statusEl.textContent = 'Training...';
+  trainBtn.disabled = true;
+
+  // Remember where we started so we can animate from here to the trained result
+  const startWeights = [...weights];
+  const startBias = bias;
 
   // train() needs the dataset (global from math-core.js), epochs, and a learning rate
   const result = train(dataset, 1000, 0.1);
-  weights = result.weights;
-  bias = result.bias;
 
-  statusEl.textContent = 'Trained';
-
-  updatePrediction();
-  drawLossChart(result.lossHistory);
+  animateTraining(startWeights, startBias, result.weights, result.bias, result.lossHistory);
 });
 
-function drawLossChart(lossHistory) {
+// Animates from the pre-training weights/bias to the final trained ones,
+// drawing the loss chart progressively at the same time, so training
+// visibly "happens" instead of the UI snapping straight to the end state.
+function animateTraining(startWeights, startBias, endWeights, endBias, lossHistory) {
+  const totalFrames = 60; // ~1 second at 60fps
+  let frame = 0;
+
+  function step() {
+    frame++;
+    const t = frame / totalFrames; // 0 -> 1 progress
+
+    // Interpolate weights/bias toward their final trained values
+    weights = [
+      startWeights[0] + (endWeights[0] - startWeights[0]) * t,
+      startWeights[1] + (endWeights[1] - startWeights[1]) * t,
+    ];
+    bias = startBias + (endBias - startBias) * t;
+
+    updatePrediction();
+    drawLossChart(lossHistory, t);
+
+    if (frame < totalFrames) {
+      requestAnimationFrame(step);
+    } else {
+      // Snap to exact final values to avoid any floating point drift
+      weights = endWeights;
+      bias = endBias;
+      updatePrediction();
+      drawLossChart(lossHistory, 1);
+
+      statusEl.textContent = 'Trained';
+      trainBtn.disabled = false;
+    }
+  }
+
+  requestAnimationFrame(step);
+}
+
+// progress: 0-1, how much of the lossHistory to reveal so far
+function drawLossChart(lossHistory, progress = 1) {
   const ctx = lossCanvas.getContext('2d');
   ctx.clearRect(0, 0, lossCanvas.width, lossCanvas.height);
 
@@ -81,9 +121,12 @@ function drawLossChart(lossHistory) {
   const w = lossCanvas.width;
   const h = lossCanvas.height;
 
+  const pointsToShow = Math.max(1, Math.round(lossHistory.length * progress));
+  const visibleHistory = lossHistory.slice(0, pointsToShow);
+
   ctx.beginPath();
   ctx.strokeStyle = 'blue';
-  lossHistory.forEach((loss, i) => {
+  visibleHistory.forEach((loss, i) => {
     const x = (i / (lossHistory.length - 1)) * w;
     const y = h - (loss / maxLoss) * h;
     if (i === 0) ctx.moveTo(x, y);

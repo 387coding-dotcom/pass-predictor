@@ -2,7 +2,7 @@
 //
 // What this person had to do:
 // 1. Write drawNetwork() — draws the neural network as a picture on
-//    an HTML canvas: input nodes (marks, attendance), an output node,
+//    an HTML canvas: input nodes (study, sleep), an output node,
 //    and lines connecting them representing the weights.
 // 2. Map weight values to visuals — thicker lines for stronger
 //    weights (bigger absolute value), green lines for positive
@@ -15,18 +15,18 @@
 // project — see index.html script order).
 //
 // drawNetwork(ctx, weights, bias, inputs)
-//   inputs -> [marks, attendance], raw 0-100 values (normalized internally)
+//   inputs -> [study, sleep], raw 0-10 values (normalized internally)
 // Draws the diagram onto ctx and returns the predicted probability (0-1).
 
 function drawNetwork(ctx, weights, bias, inputs) {
-  const [marksNorm, attendanceNorm] = normalize(inputs[0], inputs[1]);
-  const probability = forward(marksNorm, attendanceNorm, weights, bias);
+  const [studyNorm, sleepNorm] = normalize(inputs[0], inputs[1]);
+  const probability = forward(studyNorm, sleepNorm, weights, bias);
 
   const width = ctx.canvas.width;
   const height = ctx.canvas.height;
   ctx.clearRect(0, 0, width, height);
 
-  const inputLabels = ['Marks', 'Attendance'];
+  const inputLabels = ['Study', 'Sleep'];
   const inputX = 80;
   const inputYPositions = [height / 3, (2 * height) / 3];
   const outputX = width - 100;

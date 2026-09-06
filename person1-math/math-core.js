@@ -2,60 +2,49 @@
 //
 // What this person had to do:
 // 1. Create the dataset — a list of student records, each with
-//    marks, attendance, and whether they passed (1) or not (0).
-// 2. Write normalize() — takes raw marks and attendance (0-100) and
+//    study hours, sleep hours, and whether they passed (1) or not (0).
+// 2. Write normalize() — takes raw study/sleep hours (0-10) and
 //    scales them down to a 0-1 range, since the network works better
 //    with small numbers.
 // 3. Write sigmoid() — a math function that takes any number and
 //    squashes it into a probability between 0 and 1.
-// 4. Write forward() — takes the normalized marks/attendance plus the
+// 4. Write forward() — takes the normalized study/sleep plus the
 //    weights and bias, does the math (multiply, add, run through
 //    sigmoid), and returns a final probability of passing.
 //
 // Signatures match the contract in the README exactly, since
 // person2-training/train.js and person3-diagram/diagram.js are both
 // already written against it:
-//   normalize(marks, attendance) -> [marksNorm, attendanceNorm]
-//   forward(marksNorm, attendanceNorm, weights, bias) -> probability (0-1)
-// weights = [w_marks, w_attendance], bias = single number.
+//   normalize(study, sleep) -> [studyNorm, sleepNorm]
+//   forward(studyNorm, sleepNorm, weights, bias) -> probability (0-1)
+// weights = [w_study, w_sleep], bias = single number.
 
 const dataset = [
-  { marks: 67, attendance: 66, passed: 1 },
-  { marks: 93, attendance: 79, passed: 1 },
-  { marks: 80, attendance: 78, passed: 1 },
-  { marks: 62, attendance: 41, passed: 0 },
-  { marks: 24, attendance: 46, passed: 0 },
-  { marks: 43, attendance: 100, passed: 1 },
-  { marks: 77, attendance: 77, passed: 1 },
-  { marks: 49, attendance: 48, passed: 0 },
-  { marks: 28, attendance: 93, passed: 0 },
-  { marks: 88, attendance: 89, passed: 1 },
-  { marks: 56, attendance: 50, passed: 0 },
-  { marks: 87, attendance: 33, passed: 1 },
-  { marks: 81, attendance: 97, passed: 1 },
-  { marks: 84, attendance: 38, passed: 1 },
-  { marks: 47, attendance: 75, passed: 0 },
-  { marks: 24, attendance: 49, passed: 0 },
-  { marks: 60, attendance: 84, passed: 1 },
-  { marks: 42, attendance: 66, passed: 0 },
-  { marks: 20, attendance: 70, passed: 0 },
-  { marks: 64, attendance: 76, passed: 1 },
-  { marks: 76, attendance: 90, passed: 1 },
-  { marks: 85, attendance: 46, passed: 1 },
-  { marks: 87, attendance: 60, passed: 1 },
-  { marks: 93, attendance: 40, passed: 1 },
-  { marks: 88, attendance: 50, passed: 1 },
-  { marks: 21, attendance: 64, passed: 0 },
-  { marks: 22, attendance: 41, passed: 0 },
-  { marks: 95, attendance: 47, passed: 1 },
-  { marks: 46, attendance: 73, passed: 0 },
-  { marks: 79, attendance: 71, passed: 1 },
-  { marks: 85, attendance: 73, passed: 1 },
-  { marks: 70, attendance: 36, passed: 0 },
-  { marks: 42, attendance: 36, passed: 0 },
-  { marks: 92, attendance: 98, passed: 1 },
-  { marks: 39, attendance: 87, passed: 0 },
-  { marks: 38, attendance: 60, passed: 0 },
+  { study: 1, sleep: 1, passed: 0 },
+  { study: 2, sleep: 8, passed: 0 },
+  { study: 8, sleep: 2, passed: 0 },
+  { study: 5, sleep: 5, passed: 1 },
+  { study: 6, sleep: 6, passed: 1 },
+  { study: 9, sleep: 9, passed: 0 },
+  { study: 3, sleep: 3, passed: 0 },
+  { study: 5, sleep: 6, passed: 1 },
+  { study: 6, sleep: 5, passed: 1 },
+  { study: 4, sleep: 4, passed: 1 },
+  { study: 7, sleep: 7, passed: 1 },
+  { study: 4, sleep: 5, passed: 1 },
+  { study: 7, sleep: 6, passed: 1 },
+  { study: 2, sleep: 2, passed: 0 },
+  { study: 9, sleep: 1, passed: 0 },
+  { study: 1, sleep: 9, passed: 0 },
+  { study: 10, sleep: 10, passed: 0 },
+  { study: 3, sleep: 8, passed: 0 },
+  { study: 8, sleep: 3, passed: 0 },
+  { study: 6, sleep: 7, passed: 1 },
+  { study: 4, sleep: 3, passed: 0 },
+  { study: 3, sleep: 4, passed: 0 },
+  { study: 5, sleep: 4, passed: 1 },
+  { study: 1, sleep: 5, passed: 0 },
+  { study: 9, sleep: 5, passed: 0 },
 ];
 
 // Rescales an input value from its original range to 0-1
@@ -68,16 +57,16 @@ function sigmoid(z) {
   return 1 / (1 + Math.exp(-z));
 }
 
-// marks/attendance are raw 0-100 values -> [marksNorm, attendanceNorm]
-function normalize(marks, attendance) {
+// study/sleep are raw 0-10 values -> [studyNorm, sleepNorm]
+function normalize(study, sleep) {
   return [
-    normalizeValue(marks, 0, 100),
-    normalizeValue(attendance, 0, 100),
+    normalizeValue(study, 0, 10),
+    normalizeValue(sleep, 0, 10),
   ];
 }
 
-// marksNorm/attendanceNorm are already 0-1 (call normalize() first)
-function forward(marksNorm, attendanceNorm, weights, bias) {
-  const z = weights[0] * marksNorm + weights[1] * attendanceNorm + bias;
+// studyNorm/sleepNorm are already 0-1 (call normalize() first)
+function forward(studyNorm, sleepNorm, weights, bias) {
+  const z = weights[0] * studyNorm + weights[1] * sleepNorm + bias;
   return sigmoid(z);
 }

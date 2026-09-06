@@ -11,12 +11,12 @@
 
 <div class="layout">
   <div class="panel">
-    <label>Marks: <span id="marksVal">70</span></label>
-    <input type="range" id="marksSlider" min="0" max="100" value="70"
-      oninput="document.getElementById('marksVal').textContent=this.value">
-    <label>Attendance: <span id="attendanceVal">70</span></label>
-    <input type="range" id="attendanceSlider" min="0" max="100" value="70"
-      oninput="document.getElementById('attendanceVal').textContent=this.value">
+    <label>Study hours: <span id="studyVal">5</span></label>
+    <input type="range" id="studySlider" min="0" max="10" value="5"
+      oninput="document.getElementById('studyVal').textContent=this.value">
+    <label>Sleep hours: <span id="sleepVal">5</span></label>
+    <input type="range" id="sleepSlider" min="0" max="10" value="5"
+      oninput="document.getElementById('sleepVal').textContent=this.value">
     <button id="trainBtn">Train Network</button>
     <p id="status">Untrained</p>
     <h2 id="predPct">--%</h2>
