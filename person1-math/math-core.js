@@ -1,9 +1,20 @@
 // PERSON 1: Data & Forward Pass
 //
-// Plain browser globals (no bundler/import-export in this project —
-// see index.html script order). Signatures match the contract in the
-// README exactly, since person2-training/train.js and
-// person3-diagram/diagram.js are both already written against it:
+// What this person had to do:
+// 1. Create the dataset — a list of student records, each with
+//    marks, attendance, and whether they passed (1) or not (0).
+// 2. Write normalize() — takes raw marks and attendance (0-100) and
+//    scales them down to a 0-1 range, since the network works better
+//    with small numbers.
+// 3. Write sigmoid() — a math function that takes any number and
+//    squashes it into a probability between 0 and 1.
+// 4. Write forward() — takes the normalized marks/attendance plus the
+//    weights and bias, does the math (multiply, add, run through
+//    sigmoid), and returns a final probability of passing.
+//
+// Signatures match the contract in the README exactly, since
+// person2-training/train.js and person3-diagram/diagram.js are both
+// already written against it:
 //   normalize(marks, attendance) -> [marksNorm, attendanceNorm]
 //   forward(marksNorm, attendanceNorm, weights, bias) -> probability (0-1)
 // weights = [w_marks, w_attendance], bias = single number.

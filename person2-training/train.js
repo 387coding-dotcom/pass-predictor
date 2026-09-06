@@ -1,5 +1,16 @@
 // PERSON 2: Training & Optimization
 //
+// What this person had to do:
+// 1. Write a loss function — measures how wrong the model's
+//    predictions are compared to the actual pass/fail results
+//    (using mean squared error, averaged across the whole dataset).
+// 2. Write train() — runs gradient descent: repeatedly makes
+//    predictions, checks the error, and nudges the weights and bias
+//    in the direction that reduces that error, over many epochs.
+// 3. Make training progress available — return the loss for every
+//    epoch (lossHistory) so the UI can plot how the error drops
+//    over time as training happens.
+//
 // Depends on normalize() and forward() from person1-math/math-core.js,
 // loaded first as plain browser globals (no bundler/require in this
 // project — see index.html script order).

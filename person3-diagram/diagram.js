@@ -1,5 +1,15 @@
 // PERSON 3: Network Visualization
 //
+// What this person had to do:
+// 1. Write drawNetwork() — draws the neural network as a picture on
+//    an HTML canvas: input nodes (marks, attendance), an output node,
+//    and lines connecting them representing the weights.
+// 2. Map weight values to visuals — thicker lines for stronger
+//    weights (bigger absolute value), green lines for positive
+//    weights, red lines for negative weights.
+// 3. Redraw on every update — so the diagram animates live as the
+//    sliders move or as training changes the weights.
+//
 // Depends on normalize() and forward() from person1-math/math-core.js,
 // loaded as a plain browser global (no bundler/import-export in this
 // project — see index.html script order).

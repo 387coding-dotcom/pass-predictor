@@ -1,10 +1,23 @@
 // PERSON 4: UI, Layout & Integration
 //
+// What this person had to do:
+// 1. Build the HTML/CSS layout — sliders for marks and attendance,
+//    a "Train Network" button, a canvas for the network diagram, and
+//    a canvas for the loss chart, all laid out side by side.
+// 2. Wire up the sliders — on every slider move, read the values,
+//    run them through normalize() + forward(), and update the live
+//    prediction percentage on screen.
+// 3. Wire up the "Train Network" button — call train() with the
+//    dataset, store the resulting weights/bias, then refresh the
+//    diagram and prediction.
+// 4. Draw the loss chart — after training finishes, plot the
+//    lossHistory on a canvas so you can see the error dropping over
+//    each epoch.
+//
 // Depends on: forward(), normalize() from person1-math/math-core.js
 //             train() from person2-training/train.js
 //             drawNetwork() from person3-diagram/diagram.js
 
-// Grab references to HTML elements
 const marksSlider = document.getElementById('marksSlider');
 const attendanceSlider = document.getElementById('attendanceSlider');
 const trainBtn = document.getElementById('trainBtn');
