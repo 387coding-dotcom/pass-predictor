@@ -4,20 +4,22 @@
 // 1. Create the dataset — a list of student records, each with
 //    study hours, sleep hours, and whether they passed (1) or not (0).
 // 2. Write normalize() — takes raw study/sleep hours (0-10) and
-//    scales them down to a 0-1 range, since the network works better
-//    with small numbers.
+//    scales them to 0-1, and also computes a third engineered
+//    feature: how unbalanced study and sleep are (|study - sleep|),
+//    since passing in this dataset depends on the two being close
+//    together, not just being individually high.
 // 3. Write sigmoid() — a math function that takes any number and
 //    squashes it into a probability between 0 and 1.
-// 4. Write forward() — takes the normalized study/sleep plus the
+// 4. Write forward() — takes the normalized study/sleep/diff plus the
 //    weights and bias, does the math (multiply, add, run through
 //    sigmoid), and returns a final probability of passing.
 //
 // Signatures match the contract in the README exactly, since
 // person2-training/train.js and person3-diagram/diagram.js are both
 // already written against it:
-//   normalize(study, sleep) -> [studyNorm, sleepNorm]
-//   forward(studyNorm, sleepNorm, weights, bias) -> probability (0-1)
-// weights = [w_study, w_sleep], bias = single number.
+//   normalize(study, sleep) -> [studyNorm, sleepNorm, diffNorm]
+//   forward(studyNorm, sleepNorm, diffNorm, weights, bias) -> probability (0-1)
+// weights = [w_study, w_sleep, w_diff], bias = single number.
 
 const dataset = [
   { study: 1, sleep: 1, passed: 0 },
@@ -57,16 +59,19 @@ function sigmoid(z) {
   return 1 / (1 + Math.exp(-z));
 }
 
-// study/sleep are raw 0-10 values -> [studyNorm, sleepNorm]
+// study/sleep are raw 0-10 values -> [studyNorm, sleepNorm, diffNorm]
+// diffNorm captures how unbalanced study and sleep are from each other
 function normalize(study, sleep) {
+  const diff = Math.abs(study - sleep);
   return [
     normalizeValue(study, 0, 10),
     normalizeValue(sleep, 0, 10),
+    normalizeValue(diff, 0, 10),
   ];
 }
 
-// studyNorm/sleepNorm are already 0-1 (call normalize() first)
-function forward(studyNorm, sleepNorm, weights, bias) {
-  const z = weights[0] * studyNorm + weights[1] * sleepNorm + bias;
+// studyNorm/sleepNorm/diffNorm are already 0-1 (call normalize() first)
+function forward(studyNorm, sleepNorm, diffNorm, weights, bias) {
+  const z = weights[0] * studyNorm + weights[1] * sleepNorm + weights[2] * diffNorm + bias;
   return sigmoid(z);
 }

@@ -67,7 +67,8 @@ trainBtn.addEventListener('click', function () {
   const startBias = bias;
 
   // train() needs the dataset (global from math-core.js), epochs, and a learning rate
-  const result = train(dataset, 1000, 0.1);
+  // (higher epochs/learning rate here since we now have 3 weights to fit)
+  const result = train(dataset, 3000, 0.5);
 
   animateTraining(startWeights, startBias, result.weights, result.bias, result.lossHistory);
 });

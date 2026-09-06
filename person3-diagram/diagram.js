@@ -2,8 +2,8 @@
 //
 // What this person had to do:
 // 1. Write drawNetwork() — draws the neural network as a picture on
-//    an HTML canvas: input nodes (study, sleep), an output node,
-//    and lines connecting them representing the weights.
+//    an HTML canvas: input nodes (study, sleep, and their imbalance),
+//    an output node, and lines connecting them representing the weights.
 // 2. Map weight values to visuals — thicker lines for stronger
 //    weights (bigger absolute value), green lines for positive
 //    weights, red lines for negative weights.
@@ -15,23 +15,27 @@
 // project — see index.html script order).
 //
 // drawNetwork(ctx, weights, bias, inputs)
-//   inputs -> [study, sleep], raw 0-10 values (normalized internally)
+//   inputs -> [study, sleep], raw 0-10 values (diff computed and
+//   normalized internally by normalize())
 // Draws the diagram onto ctx and returns the predicted probability (0-1).
 
 function drawNetwork(ctx, weights, bias, inputs) {
-  const [studyNorm, sleepNorm] = normalize(inputs[0], inputs[1]);
-  const probability = forward(studyNorm, sleepNorm, weights, bias);
+  const [study, sleep] = inputs;
+  const diff = Math.abs(study - sleep);
+  const [studyNorm, sleepNorm, diffNorm] = normalize(study, sleep);
+  const probability = forward(studyNorm, sleepNorm, diffNorm, weights, bias);
 
   const width = ctx.canvas.width;
   const height = ctx.canvas.height;
   ctx.clearRect(0, 0, width, height);
 
-  const inputLabels = ['Study', 'Sleep'];
+  const displayValues = [study, sleep, diff];
+  const inputLabels = ['Study', 'Sleep', '|Diff|'];
   const inputX = 80;
-  const inputYPositions = [height / 3, (2 * height) / 3];
+  const inputYPositions = [height / 4, height / 2, (3 * height) / 4];
   const outputX = width - 100;
   const outputY = height / 2;
-  const nodeRadius = 30;
+  const nodeRadius = 28;
 
   // Draw connecting lines first, so nodes render on top
   inputYPositions.forEach((inputY, i) => {
@@ -59,7 +63,7 @@ function drawNetwork(ctx, weights, bias, inputs) {
     ctx.font = '14px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(inputLabels[i], inputX, inputY - nodeRadius - 10);
-    ctx.fillText(inputs[i].toFixed(1), inputX, inputY + 5);
+    ctx.fillText(displayValues[i].toFixed(1), inputX, inputY + 5);
   });
 
   // Draw output node
